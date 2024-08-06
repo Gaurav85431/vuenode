@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <script src="https://unpkg.com/vue@next"></script>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+
+</head>
+
+<body>
+  <div id="app"></div>
+
+
+  <!-- <script type="module" src="./main.js"></script> -->
+
+  <script type="text/javascript">
+    // Create the Vue app directly in this script block
+    const { createApp, ref, onMounted } = Vue;
+
+    const App = {
+      setup() {
+        const items = ref([]);
+        const newItem = ref({ name: '', description: '' });
+        const selectedItem = ref(null);
+        const apiUrl = 'http://localhost:3000/api/items';
+
+        // Fetch items from the API
+        const fetchItems = async () => {
+          try {
+            const response = await axios.get(apiUrl);
+            items.value = response.data;
+          } catch (error) {
+            console.error('Error fetching items:', error);
+          }
+        };
+
+        // Create a new item
+        const createItem = async () => {
+          try {
+            const response = await axios.post(apiUrl, newItem.value);
+            items.value.push(response.data);
+            newItem.value = { name: '', description: '' };
+          } catch (error) {
+            console.error('Error creating item:', error);
+          }
+        };
+
+        // Update an item
+        const updateItem = async () => {
+          try {
+            const response = await axios.put(`${apiUrl}/${selectedItem.value._id}`, selectedItem.value);
+            const index = items.value.findIndex(item => item._id === selectedItem.value._id);
+            items.value[index] = response.data;
+            selectedItem.value = null;
+          } catch (error) {
+            console.error('Error updating item:', error);
+          }
+        };
+
+        // Delete an item
+        const deleteItem = async (id) => {
+          try {
+            await axios.delete(`${apiUrl}/${id}`);
+            items.value = items.value.filter(item => item._id !== id);
+          } catch (error) {
+            console.error('Error deleting item:', error);
+          }
+        };
+
+        onMounted(fetchItems);
+
+        return {
+          items,
+          newItem,
+          selectedItem,
+          createItem,
+          updateItem,
+          deleteItem,
+        };
+      },
+      template: `
+            <div>
+                <h1>Vue 3 CRUD App</h1>
+                
+                <h2>Create Item</h2>
+                <input v-model="newItem.name" placeholder="Name">
+                <input v-model="newItem.description" placeholder="Description">
+                <button @click="createItem">Create</button>
+                
+                <h2>Items</h2>
+                <ul>
+                    <li v-for="item in items" :key="item._id">
+                        {{ item.name }} - {{ item.description }}
+                        <button @click="selectedItem = { ...item }">Edit</button>
+                        <button @click="deleteItem(item._id)">Delete</button>
+                    </li>
+                </ul>
+                
+                <div v-if="selectedItem">
+                    <h2>Edit Item</h2>
+                    <input v-model="selectedItem.name" placeholder="Name">
+                    <input v-model="selectedItem.description" placeholder="Description">
+                    <button @click="updateItem">Update</button>
+                    <button @click="selectedItem = null">Cancel</button>
+                </div>
+            </div>
+        `,
+    };
+
+    // Mount the app
+    createApp(App).mount('#app');
+  </script>
+
+
+</body>
+
+</html>
